@@ -1,33 +1,33 @@
-import socket, time
+from flask import Flask, request, redirect
+from flask.templating import render_template
+from flask_sqlalchemy import SQLAlchemy
 
-host = socket.gethostbyname(socket.gethostname())
-port = 9090
+app = Flask(__name__)
+app.debug = True
 
-clients = []
+# adding configuration for using a sqlite database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 
-s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-s.bind((host, port))
+# Creating an SQLAlchemy instance
+db = SQLAlchemy(app)
 
-quit = False
-print("[ Server Started ]")
+# Models
+class Profile(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(20), unique=False, nullable=False)
+    last_name = db.Column(db.String(20), unique=False, nullable=False)
+    age = db.Column(db.Integer, nullable=False)
 
-while not quit:
-	try:
-		data, addr = s.recvfrom(1024)
+    def __repr__(self):
+        return f"Name : {self.first_name}, Age: {self.age}"
 
-		if addr not in clients:
-			clients.append(addr)
+# function to render index page
+@app.route('/')
+def index():
+    return render_template('index.html')
+@app.route('/add_data')
+def add_data():
+    return render_template('add_profile.html')
 
-		itsatime = time.strftime("%Y-%m-%d-%H.%M.%S", time.localtime())
-
-		print("["+addr[0]+"]=["+str(addr[1])+"]=["+itsatime+"]/",end="")
-		print(data.decode("utf-8"))
-
-		for client in clients:
-			if addr != client:
-				s.sendto(data,client)
-	except:	
-		print("\n[ Server Stopped ]")
-		quit = True
-		
-s.close()
+if __name__ == '__main__':
+    app.run()
